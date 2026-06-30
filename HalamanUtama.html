@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>For You✨</title>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Playfair+Display:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+    
+    <style>
+        /* === GAYA UMUM === */
+        body, html {
+            margin: 0; padding: 0;
+            font-family: 'Playfair Display', serif;
+            background-color: #FFFDE7;
+            overflow-x: hidden;
+            position: relative;
+            user-select: none; /* Alang-alang, elakkan teks di-highlight sewaktu menggosok */
+        }
+
+        /* === KESAN BUNGA GUGUR === */
+        .petal {
+            position: fixed; top: -20px; font-size: 22px;
+            pointer-events: none; z-index: 99;
+            animation: fall linear infinite;
+        }
+        @keyframes fall {
+            0% { transform: translateY(0) translateX(0) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(105vh) translateX(120px) rotate(360deg); opacity: 0; }
+        }
+
+        /* === SKRIN KUNCI === */
+        #lock-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
+            background: linear-gradient(135deg, #FFD54F, #FFF9C4);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 100;
+            transition: all 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .lock-header { text-align: center; margin-bottom: 25px; }
+        .lock-header h1 { 
+            font-family: 'Caveat', cursive; margin: 5px 0; font-size: 45px; color: #5D4037;
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .pin-dots { display: flex; gap: 15px; margin-bottom: 35px; }
+        .dot {
+            width: 16px; height: 16px; border-radius: 50%; background-color: #D7CCC8;
+            transition: all 0.2s ease;
+        }
+        .dot.active { 
+            background-color: #5D4037; transform: scale(1.3); box-shadow: 0 0 10px #5D4037;
+        }
+
+        .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+        .key {
+            width: 65px; height: 65px; border-radius: 50%;
+            background: rgba(255, 255, 255, 0.85); border: 1px solid #FFE082;
+            font-size: 24px; font-weight: bold; color: #5D4037;
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer; position: relative; overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05); transition: all 0.2s;
+        }
+        /* Kesan denyutan cahaya (Pulse) pada butang */
+        .key::after {
+            content: ''; position: absolute; width: 100%; height: 100%;
+            background: rgba(255, 213, 79, 0.4); opacity: 0; border-radius: 50%;
+            transform: scale(1); transition: opacity 0.4s, transform 0.4s;
+        }
+        .key:active::after { opacity: 1; transform: scale(0); transition: 0s; }
+        .key:active { transform: scale(0.9); }
+
+        .shake { animation: shake 0.4s ease-in-out; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-10px); }
+            40%, 80% { transform: translateX(10px); }
+        }
+
+        /* === KANDUNGAN MAIN SCRAPBOOK === */
+        #main-content {
+            display: none; padding: 40px 20px; max-width: 600px; margin: 0 auto;
+            position: relative; min-height: 120vh;
+            /* Latar belakang Grid Buku Nota */
+            background-color: #FFFDE7;
+            background-image: linear-gradient(#e0e0e0 1px, transparent 1px), linear-gradient(90deg, #e0e0e0 1px, transparent 1px);
+            background-size: 20px 20px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.05);
+        }
+
+        /* Animasi Pop Elemen */
+        .animate-pop {
+            opacity: 0; transform: translateY(40px) scale(0.9);
+            animation: popIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        @keyframes popIn { to { opacity: 1; transform: translateY(0) scale(1); } }
+        .delay-1 { animation-delay: 0.3s; }
+
+        /* Polaroid & Gores Camp */
+        .polaroid-grid {
+            display: flex; flex-wrap: wrap; gap: 30px; justify-content: center; margin-top: 20px;
+        }
+        
+        .polaroid {
+            width: 160px; height: 200px; background: white; padding: 10px 10px 40px 10px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.12); position: relative;
+            cursor: crosshair; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .polaroid:nth-child(1) { transform: rotate(-4deg); }
+        .polaroid:nth-child(2) { transform: rotate(5deg); }
+        .polaroid:nth-child(3) { transform: rotate(-2deg); }
+
+        .polaroid:hover {
+            transform: scale(1.08) rotate(0deg) !important;
+            box-shadow: 0 18px 35px rgba(0,0,0,0.18); z-index: 10;
+        }
+
+        /* Pita Pelekat (Washi Tape) */
+        .washi-tape {
+            position: absolute; top: -15px; left: 35px; width: 90px; height: 25px;
+            background-color: rgba(255, 138, 128, 0.7);
+            transform: rotate(-2deg);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            clip-path: polygon(0% 0%, 5% 50%, 0% 100%, 100% 100%, 95% 50%, 100% 0%); /* Efek koyak di tepi */
+            z-index: 11;
+        }
+        .polaroid:nth-child(2) .washi-tape { background-color: rgba(128, 203, 196, 0.7); }
+        .polaroid:nth-child(3) .washi-tape { background-color: rgba(255, 202, 40, 0.7); }
+
+        /* Canvas lapisan atas yang boleh digosok */
+        .scratch-canvas {
+            position: absolute; top: 10px; left: 10px;
+            width: 140px; height: 150px;
+            z-index: 5;
+        }
+
+        .polaroid img { width: 140px; height: 150px; object-fit: cover; background: #f5f5f5; }
+
+        .letter {
+            background: rgba(255, 255, 255, 0.95); padding: 30px; border-radius: 15px;
+            margin-top: 5px; border-left: 5px solid #FFB300;
+            font-family: 'Caveat', cursive; font-size: 28px; color: #5D4037;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+        }
+    </style>
+</head>
+<body>
+
+    <audio id="bg-music" src="You & I Diego Gonzalez.m4a" loop></audio>
+
+    <div id="flower-container"></div>
+
+    <div id="lock-screen">
+        <div class="lock-header">
+            <h1>From: Nabilot</h1>
+            <h1>For: Isya</h1>
+            <p>Surat Hati</p>
+        </div>
+        
+        <div class="pin-dots">
+            <div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+        </div>
+
+        <div class="keypad" id="keypad-box">
+            <div class="key" onclick="pressKey('1')">1</div><div class="key" onclick="pressKey('2')">2</div><div class="key" onclick="pressKey('3')">3</div>
+            <div class="key" onclick="pressKey('4')">4</div><div class="key" onclick="pressKey('5')">5</div><div class="key" onclick="pressKey('6')">6</div>
+            <div class="key" onclick="pressKey('7')">7</div><div class="key" onclick="pressKey('8')">8</div><div class="key" onclick="pressKey('9')">9</div>
+            <div></div><div class="key" onclick="pressKey('0')">0</div><div></div>
+        </div>
+    </div>
+
+    <div id="main-content">
+        
+        <div class="polaroid-grid animate-pop delay-1">
+            
+            <div class="polaroid">
+                <div class="washi-tape"></div>
+                <canvas class="scratch-canvas" id="canvas1"></canvas>
+                <img src="isya 1.jpeg" alt="Isya<3">
+            </div>
+
+            <div class="polaroid">
+                <div class="washi-tape"></div>
+                <canvas class="scratch-canvas" id="canvas2"></canvas>
+                <img src="isya2.jpeg" alt="Isya <3">
+            </div>
+
+            <div class="polaroid">
+                <div class="washi-tape"></div>
+                <canvas class="scratch-canvas" id="canvas3"></canvas>
+                <img src="isya3.jpeg" alt="Isya <3">
+            </div>
+
+        </div>
+
+        <div class="letter animate-pop delay-1" style="transform: rotate(-0.5deg); margin-top: 40px;">
+            <h3 style="margin-top:0; font-family:'Playfair Display', serif; font-size: 22px;">Untuk Favourite Person 🤍</h3>
+            <p>Hai Isya, Nabilot saje je nak cakap yang Nabil suka Isya HAHAHAHA. Sorry tauu kalau Nabil buat web ni nampak macam simple hihihi, harap Isya suka laa.</p>
+            <p style="text-align: right; font-weight: bold; margin-bottom: 0;">- Nabil</p>
+        </div>
+
+    </div>
+
+    <script>
+        let currentPin = "";
+        const correctPin = "0205"; // PIN UTAMA LUAR
+
+        // 1. KESAN BUNGA GUGUR 
+        const flowers = ['🌸', '🌼', '✨', '💖', '🍂'];
+        function createPetal() {
+            const container = document.getElementById('flower-container');
+            if(!container) return;
+            const petal = document.createElement('div');
+            petal.classList.add('petal');
+            petal.innerText = flowers[Math.floor(Math.random() * flowers.length)];
+            petal.style.left = Math.random() * 100 + 'vw';
+            petal.style.fontSize = Math.random() * 12 + 14 + 'px';
+            const duration = Math.random() * 4 + 5;
+            petal.style.animationDuration = duration + 's';
+            container.appendChild(petal);
+            setTimeout(() => petal.remove(), duration * 1000);
+        }
+        setInterval(createPetal, 350);
+
+        // 2. KESAN LETUPAN HATI (HEART BURST) APABILA BERJAYA UNLOCK
+        function burstHearts() {
+            for(let i=0; i<35; i++) {
+                const heart = document.createElement('div');
+                heart.innerText = ['❤️','✨','💖','🌸'][Math.floor(Math.random()*4)];
+                heart.style.position = 'fixed';
+                heart.style.left = '50vw'; heart.style.top = '50vh';
+                heart.style.fontSize = '24px'; heart.style.pointerEvents = 'none';
+                heart.style.zIndex = '101'; heart.style.transition = 'all 1s cubic-bezier(0.25, 1, 0.5, 1)';
+                document.body.appendChild(heart);
+
+                // Kira radius pergerakan letupan rawak
+                const angle = Math.random() * Math.PI * 2;
+                const velocity = Math.random() * 250 + 50;
+                const x = Math.cos(angle) * velocity;
+                const y = Math.sin(angle) * velocity;
+
+                setTimeout(() => {
+                    heart.style.transform = `translate(${x}px, ${y}px) scale(0)`;
+                    heart.style.opacity = '0';
+                }, 50);
+                setTimeout(() => heart.remove(), 1050);
+            }
+        }
+
+        // 3. SISTEM VERIFIKASI PIN
+        function pressKey(num) {
+            if (currentPin.length < 4) {
+                currentPin += num;
+                updateDots();
+            }
+            if (currentPin.length === 4) {
+                setTimeout(checkPin, 250);
+            }
+        }
+
+        function updateDots() {
+            const dots = document.querySelectorAll('.dot');
+            dots.forEach((dot, index) => {
+                index < currentPin.length ? dot.classList.add('active') : dot.classList.remove('active');
+            });
+        }
+
+        function checkPin() {
+            const keypadBox = document.getElementById('keypad-box');
+            if (currentPin === correctPin) {
+                burstHearts(); // <--- Cetus Letupan Hati!
+                
+                // MAIN LAGU LATAR BELAKANG SEBAIK SAHAJA UNLOCK BERJAYA
+                const bgMusic = document.getElementById('bg-music');
+                if (bgMusic) {
+                    bgMusic.play().catch(error => {
+                        console.log("Audio autoplay disekat oleh pelayar web: ", error);
+                    });
+                }
+
+                const lockScreen = document.getElementById('lock-screen');
+                lockScreen.style.opacity = '0';
+                lockScreen.style.transform = 'scale(1.1)';
+                
+                setTimeout(() => {
+                    lockScreen.style.display = 'none';
+                    document.getElementById('main-content').style.display = 'block';
+                    // Mulakan fungsi gosok kad selepas kontena dipaparkan
+                    initScratchCards();
+                }, 1200);
+            } else {
+                keypadBox.classList.add('shake');
+                setTimeout(() => {
+                    keypadBox.classList.remove('shake');
+                    currentPin = ""; updateDots();
+                }, 400);
+            }
+        }
+
+        // 4. KESAN GOSOK KAD SEBENAR (HTML5 CANVAS SCRATCH-OFF)
+        function initScratchCards() {
+            const canvases = document.querySelectorAll('.scratch-canvas');
+            
+            canvases.forEach(canvas => {
+                const ctx = canvas.getContext('2d');
+                
+                // Tetapkan resolusi canvas dalaman mengikut saiz paparan fizikalnya
+                canvas.width = 140;
+                canvas.height = 150;
+
+                // Warna lapisan penutup (Emas Berkilat)
+                ctx.fillStyle = '#FFCA28';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Tambah corak titik estetik sikit pada lapisan penutup
+                ctx.fillStyle = '#FFB300';
+                for (let i = 0; i < 200; i++) {
+                    ctx.fillRect(Math.random() * canvas.width, Math.random() * canvas.height, 2, 2);
+                }
+
+                // Tambah tulisan panduan di tengah kad
+                ctx.fillStyle = '#5D4037';
+                ctx.font = 'bold 20px Caveat';
+                ctx.textAlign = 'center';
+                ctx.fillText('Ni Sayang✨', canvas.width / 2, canvas.height / 2 + 5);
+
+                let isDrawing = false;
+
+                function scratch(e) {
+                    if (!isDrawing) return;
+                    
+                    const rect = canvas.getBoundingClientRect();
+                    // Mengambil posisi sentuhan jari (mobile) atau tetikus (desktop)
+                    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                    
+                    const x = clientX - rect.left;
+                    const y = clientY - rect.top;
+
+                    // Menggunakan mod 'destination-out' untuk memadam pixel (efek gores)
+                    ctx.globalCompositeOperation = 'destination-out';
+                    ctx.beginPath();
+                    ctx.arc(x, y, 16, 0, Math.PI * 2); // Saiz berus goresan = 16
+                    ctx.fill();
+                }
+
+                // Event bagi Desktop (Mouse)
+                canvas.addEventListener('mousedown', () => isDrawing = true);
+                canvas.addEventListener('mousemove', scratch);
+                window.addEventListener('mouseup', () => isDrawing = false);
+
+                // Event bagi Mobile (Touch)
+                canvas.addEventListener('touchstart', () => isDrawing = true);
+                canvas.addEventListener('touchmove', (e) => {
+                    e.preventDefault(); // Elakkan skrin bergoyang semasa menggosok di telefon
+                    scratch(e);
+                });
+                window.addEventListener('touchend', () => isDrawing = false);
+            });
+        }
+    </script>
+</body>
+</html>
