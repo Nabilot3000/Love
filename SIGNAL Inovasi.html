@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🚀 Sistem Audit & Dashboard HIRARC</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <style> 
+        /* Latar belakang gelap (Overlay) */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(4px);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Kotak putih Dashboard */
+        .modal-content {
+            background: white;
+            width: 95%;
+            max-width: 800px;
+            max-height: 85vh;
+            border-radius: 12px;
+            padding: 25px;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transform: translateY(-30px);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.show .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 { margin: 0; color: #2c3e50; font-size: 1.5em; }
+
+        .form-select-cikgu {
+            width: 100%;
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 2px solid #bdc3c7;
+            font-size: 1.1em;
+            margin-bottom: 20px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .form-select-cikgu:focus { border-color: #3498db; }
+
+        .loading-text {
+            text-align: center; font-size: 1.2em; color: #7f8c8d; padding: 30px; font-weight: bold;
+        }
+
+        .table-cikgu-wrapper {
+            overflow-x: auto; margin-top: 20px; border-radius: 8px; border: 1px solid #ecf0f1;
+        }
+
+        .cikgu-table { width: 100%; border-collapse: collapse; }
+        .cikgu-table th { background: #34495e; color: white; padding: 12px; text-align: left; white-space: nowrap; }
+        .cikgu-table td { padding: 12px; border-bottom: 1px solid #ecf0f1; }
+        .cikgu-table tr:hover { background-color: #f7f9fa; }
+
+        .btn-cikgu {
+            background-color: #2ecc71; color: white; padding: 12px 20px; border: none;
+            border-radius: 6px; font-size: 1.1em; cursor: pointer; font-weight: bold;
+            width: 100%; box-shadow: 0 4px 6px rgba(46, 204, 113, 0.2); transition: background-color 0.3s;
+        }
+        .btn-cikgu:hover { background-color: #27ae60; }
+        
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<div id="feedbackBox" class="feedback"></div>
+
+<div class="container">
+    <div class="header-container">
+        <h1>📋 Sistem Audit HIRARC</h1>
+        <button class="btn-admin" id="adminToggleBtn" onclick="toggleAdmin()">🔒 Admin</button>
+    </div>
+
+   
+
+    <div id="loginBox" class="hidden" style="background: #eaf2f8; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 2px solid var(--secondary-color); text-align: right; display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap;">
+        <label style="margin: 0;">Kata Laluan:</label>
+        <input type="password" id="adminPass" style="width: 200px; margin: 0; padding: 8px;">
+        <div style="display: flex; gap: 5px;">
+            <button onclick="checkAdmin()" class="btn-success" style="width: auto; padding: 8px 15px; margin: 0;">Sahkan</button>
+            <button onclick="cancelAdmin()" class="btn-danger" style="width: auto; padding: 8px 15px; margin: 0;">Batal</button>
+        </div>
+    </div>
+
+    <form id="hiracForm" class="no-print">
+        <input type="hidden" id="editId">
+        
+        <div class="row">
+            <div class="col">
+                <div class="form-group">
+                    <label>📍 Lokasi Audit:</label>
+                    <select id="lokasi" required>
+                        <option value="">Pilih Lokasi...</option>
+                        <option value="Makmal 4">Makmal 4</option>
+                        <option value="Makmal 5">Makmal 5</option>
+                        <option value="Makmal 8">Makmal 8</option>
+                        <option value="Makmal 9">Makmal 9</option>
+                        <option value="Makmal 10">Makmal 10</option>
+                        <option value="Bilik Operasi JTM">Bilik Operasi JTM</option>
+                        <option value="Bilik Guru JTM">Bilik Guru JTM</option>
+                        <option value="Dewan Dagang">Dewan Dagang</option>
+                        <option value="Bilik Galeri">Bilik Galeri</option>
+                        <option value="Perpustakaan">Perpustakaan</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col">
+                <div class="form-group">
+                    <label>🏭 Nama Kerja / Aktiviti:</label>
+                    <input type="text" id="task" required>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col">
+                <div class="form-group">
+                    <label>⚠️ Punca Bahaya:</label>
+                    <input type="text" id="hazard" required>
+                </div>
+            </div>
+            <div class="col">
+                <div class="form-group">
+                    <label>🚨 Kejadian:</label>
+                    <input type="text" id="consequence" required>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col">
+                <div class="form-group">
+                    <label>📊 Kebarangkalian (1-5):</label>
+                    <select id="likelihood" required>
+                        <option value="">Pilih...</option>
+                        <option value="1">1</option><option value="2">2</option>
+                        <option value="3">3</option><option value="4">4</option><option value="5">5</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col">
+                <div class="form-group">
+                    <label>💥 Keparahan (1-5):</label>
+                    <select id="severity" required>
+                        <option value="">Pilih...</option>
+                        <option value="1">1</option><option value="2">2</option>
+                        <option value="3">3</option><option value="4">4</option><option value="5">5</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>🛡️ Langkah Kawalan:</label>
+            <textarea id="control" required></textarea>
+        </div>
+
+        <div class="btn-group" style="justify-content: flex-start;">
+            <button type="submit" id="submitBtn">➕ Tambah Rekod HIRAC</button>
+            <button type="button" class="btn-danger hidden" id="cancelEditBtn" onclick="cancelEdit()">❌ Batal Edit</button>
+        </div>
+    </form>
+
+    <div id="adminArea" class="hidden">
+        <hr class="no-print" style="border: 2px solid var(--primary-color); margin: 40px 0 20px 0;">
+        
+        <div id="reportArea" style="background: white; padding: 15px;">
+            <div class="dashboard-section">
+                <h2>🗺️ Dashboard Admin: Status Semasa</h2>
+                
+                <div class="no-print" style="margin-top: 20px; margin-bottom: 20px;">
+                    <button class="btn-cikgu" onclick="bukaDashboardCikgu()">👨‍🏫 Buka Dashboard Guru Bertugas</button>
+                </div>
+               
+                <div class="summary-container">
+                    <div class="summary-box">Selamat<span class="text-green" id="count-hijau">0</span></div>
+                    <div class="summary-box">Perhatian<span class="text-yellow" id="count-kuning">0</span></div>
+                    <div class="summary-box">Bahaya<span class="text-red" id="count-merah">0</span></div>
+                </div>
+
+                <div class="dashboard-grid" id="dashboard-grid"></div>
+
+                <div class="chart-container">
+                    <canvas id="riskChart"></canvas>
+                </div>
+            </div>
+
+            <div class="filter-bar no-print">
+                <input type="text" id="searchBar" placeholder="🔍 Cari Hazard / Aktiviti..." oninput="loadFromStorage()">
+                <select id="filterLokasi" onchange="loadFromStorage()">
+                    <option value="All">Semua Lokasi</option>
+                    <option value="Makmal 4">Makmal 4</option>
+                    <option value="Makmal 5">Makmal 5</option>
+                    <option value="Makmal 8">Makmal 8</option>
+                    <option value="Makmal 9">Makmal 9</option>
+                    <option value="Makmal 10">Makmal 10</option>
+                    <option value="Bilik Operasi JTM">Bilik Operasi JTM</option>
+                    <option value="Bilik Guru JTM">Bilik Guru JTM</option>
+                    <option value="Dewan Dagang">Dewan Dagang</option>
+                    <option value="Bilik Galeri">Bilik Galeri</option>
+                    <option value="Perpustakaan">Perpustakaan</option>
+                </select>
+            </div>
+
+            <div class="table-wrapper" id="pdfTableWrapper">
+                <table id="hiracTable">
+                    <thead>
+                        <tr>
+                            <th>Lokasi</th>
+                            <th>Kerja</th>
+                            <th>Bahaya</th>
+                            <th>Kejadian</th>
+                            <th>L</th>
+                            <th>S</th>
+                            <th>Skor</th>
+                            <th>Status</th>
+                            <th>Kawalan</th>
+                            <th class="no-print">Tindakan</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="confirmClearBox" class="hidden no-print" style="background: #fdeaea; padding: 15px; border-radius: 8px; margin: 20px 0; border: 2px solid var(--danger-color); text-align: center;">
+            <p style="margin: 0 0 10px 0; font-weight: bold; color: var(--danger-color);">⚠️ AMARAN: Adakah anda pasti mahu memadam SEMUA data? Tindakan ini tidak boleh dibatalkan.</p>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button onclick="executeClearData()" class="btn-danger" style="width: auto; padding: 8px 20px; margin:0;">Ya, Padam Semua</button>
+                <button onclick="cancelClearData()" class="btn-success" style="width: auto; padding: 8px 20px; margin:0;">Batal</button>
+            </div>
+        </div>
+        
+        <div class="btn-group no-print">
+            <button class="btn-warning" onclick="downloadPDF()">📄 Cetak Laporan PDF</button>
+            <button style="background-color: #9b59b6;" onclick="downloadCSV()">📥 Download CSV</button>
+            <button class="btn-danger" onclick="askClearData()">🗑️ Kosongkan Semua</button>
+        </div>
+    </div>
+</div>
+
+<div id="cikguModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>📊 Dashboard Lokasi Saya</h2>
+            <button onclick="tutupCikgu()" class="btn-danger" style="width: auto; padding: 8px 15px; margin: 0;">✖️ Tutup</button>
+        </div>
+        
+        <label style="font-weight: bold; color: #34495e;">Pilih Lokasi Bertugas Anda:</label>
+        <select id="selectCikguLokasi" class="form-select-cikgu" onchange="muatDataCikgu()">
+            <option value="">-- Sila Pilih Lokasi --</option>
+            <option value="Makmal 4">Makmal 4</option>
+            <option value="Makmal 5">Makmal 5</option>
+            <option value="Makmal 8">Makmal 8</option>
+            <option value="Makmal 9">Makmal 9</option>
+            <option value="Makmal 10">Makmal 10</option>
+            <option value="Bilik Operasi JTM">Bilik Operasi JTM</option>
+            <option value="Bilik Guru JTM">Bilik Guru JTM</option>
+            <option value="Dewan Dagang">Dewan Dagang</option>
+            <option value="Bilik Galeri">Bilik Galeri</option>
+            <option value="Perpustakaan">Perpustakaan</option>
+        </select>
+
+        <div id="loadingCikgu" class="loading-text hidden">⌛ Sedang memuat turun data dari Server...</div>
+        
+        <div id="cikguContent" class="hidden">
+            <div class="summary-container" style="gap: 15px;">
+                <div class="summary-box" style="border: 2px solid #e74c3c;">Bahaya (Merah)<span class="text-red" id="c-merah" style="font-size:1.5em; font-weight:bold; display:block;">0</span></div>
+                <div class="summary-box" style="border: 2px solid #f1c40f;">Perhatian (Kuning)<span class="text-yellow" id="c-kuning" style="font-size:1.5em; font-weight:bold; display:block;">0</span></div>
+            </div>
+            
+            <div class="table-cikgu-wrapper">
+                <table id="tableCikgu" class="cikgu-table">
+                    <thead>
+                        <tr>
+                            <th>Tarikh Rekod</th>
+                            <th>Punca Bahaya</th>
+                            <th>Skor</th>
+                            <th>Tindakan / Kawalan</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ⚠️ MASUKKAN URL GOOGLE APP SCRIPT ANDA DI SINI
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwJWgRh4lHI1O2cko5C9V5IaDblW--MkfYjtozYnvSmIKVcv-rP47plS2nUS1wWaONkKA/exec'; 
+
+const ADMIN_PASSWORD = "admin";
+let isAdmin = false;
+let riskChartInstance = null;
+
+const senaraiLokasi = [
+    "Makmal 4", "Makmal 5", "Makmal 8", "Makmal 9", "Makmal 10",
+    "Bilik Operasi JTM", "Bilik Guru JTM", "Dewan Dagang", 
+    "Bilik Galeri", "Perpustakaan"
+];
+
+document.addEventListener('DOMContentLoaded', loadFromStorage);
+
+// --- FUNGSI DASHBOARD CIKGU ---
+function bukaDashboardCikgu() {
+    document.getElementById('cikguModal').classList.add('show');
+}
+
+function tutupCikgu() {
+    document.getElementById('cikguModal').classList.remove('show');
+    document.getElementById('cikguContent').classList.add('hidden');
+    document.getElementById('selectCikguLokasi').value = "";
+}
+
+async function muatDataCikgu() {
+    const lokasiPilihan = document.getElementById('selectCikguLokasi').value;
+    if(!lokasiPilihan) return;
+
+    const loader = document.getElementById('loadingCikgu');
+    const content = document.getElementById('cikguContent');
+    
+    loader.classList.remove('hidden');
+    content.classList.add('hidden');
+
+    try {
+        const response = await fetch(GOOGLE_SCRIPT_URL);
+        const semuaData = await response.json();
+        
+        const dataLokasi = semuaData.filter(d => d.lokasi === lokasiPilihan);
+        
+        const tbody = document.querySelector('#tableCikgu tbody');
+        tbody.innerHTML = '';
+        let merah = 0, kuning = 0;
+
+        dataLokasi.forEach(d => {
+            // Pengiraan status
+            let badgeClass = 'bg-hijau';
+            if(d.riskScore > 9) { badgeClass = 'bg-merah'; merah++; }
+            else if(d.riskScore > 4) { badgeClass = 'bg-kuning'; kuning++; }
+
+            const tarikhFormat = d.timestamp ? new Date(d.timestamp).toLocaleDateString('ms-MY') : '-';
+
+            const row = `<tr>
+                <td>${tarikhFormat}</td>
+                <td>${d.hazard || '-'}</td>
+                <td><span class="badge ${badgeClass}">${d.riskScore || '-'}</span></td>
+                <td>${d.control || '-'}</td>
+            </tr>`;
+            tbody.innerHTML += row;
+        });
+
+        document.getElementById('c-merah').innerText = merah;
+        document.getElementById('c-kuning').innerText = kuning;
+        
+        loader.classList.add('hidden');
+        content.classList.remove('hidden');
+
+    } catch (error) {
+        alert("Ralat memuat data. Sila pastikan Internet anda stabil dan URL Script betul.");
+        loader.classList.add('hidden');
+        console.error(error);
+    }
+}
+
+// --- FUNGSI ADMIN ---
+function toggleAdmin() {
+    const adminArea = document.getElementById('adminArea');
+    const btn = document.getElementById('adminToggleBtn');
+    const loginBox = document.getElementById('loginBox');
+
+    if (!isAdmin) {
+        loginBox.classList.remove('hidden');
+        document.getElementById('adminPass').focus();
+    } else {
+        isAdmin = false; 
+        adminArea.classList.add('hidden');
+        btn.innerText = "🔒 Admin"; 
+        btn.style.background = "#34495e";
+        showFeedback("ℹ️ Log keluar berjaya", "info");
+        document.getElementById('confirmClearBox').classList.add('hidden'); 
+    }
+}
+
+function checkAdmin() {
+    const pass = document.getElementById('adminPass').value;
+    const adminArea = document.getElementById('adminArea');
+    const btn = document.getElementById('adminToggleBtn');
+    const loginBox = document.getElementById('loginBox');
+
+    if (pass === ADMIN_PASSWORD) {
+        isAdmin = true; 
+        adminArea.classList.remove('hidden');
+        btn.innerText = "🔓 Log Keluar"; 
+        btn.style.background = "#e74c3c";
+        loginBox.classList.add('hidden'); 
+        document.getElementById('adminPass').value = ""; 
+        showFeedback("✅ Berjaya log masuk", "success");
+        loadFromStorage();
+    } else {
+        showFeedback("❌ Kata laluan salah!", "error");
+    }
+}
+
+function cancelAdmin() {
+    document.getElementById('loginBox').classList.add('hidden');
+    document.getElementById('adminPass').value = "";
+}
+
+// --- FUNGSI SIMPAN ---
+document.getElementById('hiracForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const submitBtn = document.getElementById('submitBtn');
+    const originalBtnText = submitBtn.innerText;
+    submitBtn.innerText = "⏳ Menyimpan & Menghantar...";
+    submitBtn.disabled = true;
+
+    const id = document.getElementById('editId').value;
+    const entryData = {
+        id: id ? parseInt(id) : Date.now(),
+        lokasi: document.getElementById('lokasi').value,
+        task: document.getElementById('task').value.trim(),
+        hazard: document.getElementById('hazard').value.trim(),
+        consequence: document.getElementById('consequence').value.trim(),
+        likelihood: parseInt(document.getElementById('likelihood').value),
+        severity: parseInt(document.getElementById('severity').value),
+        control: document.getElementById('control').value.trim(),
+        timestamp: new Date().toLocaleString('ms-MY')
+    };
+    
+    entryData.riskScore = entryData.likelihood * entryData.severity;
+    let r = entryData.riskScore;
+    if (r <= 4) { entryData.riskLevel = "Rendah"; entryData.riskClass = "bg-hijau"; }
+    else if (r <= 9) { entryData.riskLevel = "Sederhana"; entryData.riskClass = "bg-kuning"; }
+    else if (r <= 16) { entryData.riskLevel = "Tinggi"; entryData.riskClass = "bg-merah"; }
+    else { entryData.riskLevel = "Ekstrim"; entryData.riskClass = "bg-ekstrim"; }
+
+    // Simpan ke Local Storage untuk Admin Dashboard pantas
+    let data = JSON.parse(localStorage.getItem('hiracData')) || [];
+    if (id) {
+        const index = data.findIndex(d => d.id === parseInt(id));
+        if (index !== -1) data[index] = entryData;
+    } else {
+        data.push(entryData);
+    }
+    localStorage.setItem('hiracData', JSON.stringify(data));
+
+    // Hantar ke Google Sheets (Ini juga akan trigger Telegram dari Apps Script)
+    const formData = new URLSearchParams();
+    formData.append('lokasi', entryData.lokasi);
+    formData.append('kerja', entryData.task);
+    formData.append('bahaya', entryData.hazard);
+    formData.append('kejadian', entryData.consequence);
+    formData.append('l', entryData.likelihood);
+    formData.append('s', entryData.severity);
+    formData.append('skor', entryData.riskScore);
+    formData.append('status', entryData.riskLevel);
+    formData.append('kawalan', entryData.control);
+
+    fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST',
+        body: formData,
+        mode: 'no-cors' 
+    })
+    .then(() => {
+        showFeedback('✅ Data Disimpan & Notifikasi Dihantar!', 'success');
+        cancelEdit(); 
+        if (isAdmin) loadFromStorage();
+        submitBtn.innerText = originalBtnText;
+        submitBtn.disabled = false;
+    })
+    .catch(error => {
+        console.error('Ralat:', error);
+        showFeedback('⚠️ Disimpan di peranti tetapi gagal ke web', 'warning');
+        cancelEdit();
+        if (isAdmin) loadFromStorage();
+        submitBtn.innerText = originalBtnText;
+        submitBtn.disabled = false;
+    });
+});
+
+function loadFromStorage() {
+    let allData = JSON.parse(localStorage.getItem('hiracData')) || [];
+    const searchQuery = document.getElementById('searchBar') ? document.getElementById('searchBar').value.toLowerCase() : "";
+    const filterLokasi = document.getElementById('filterLokasi') ? document.getElementById('filterLokasi').value : "All";
+
+    let filteredData = allData.filter(entry => {
+        const matchSearch = entry.hazard.toLowerCase().includes(searchQuery) || entry.task.toLowerCase().includes(searchQuery);
+        const matchLokasi = filterLokasi === "All" || entry.lokasi === filterLokasi;
+        return matchSearch && matchLokasi;
+    });
+
+    const tbody = document.querySelector('#hiracTable tbody');
+    if(tbody) {
+        tbody.innerHTML = ''; 
+        filteredData.forEach(entry => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><strong>${entry.lokasi}</strong></td>
+                <td>${entry.task}</td>
+                <td>${entry.hazard}</td>
+                <td>${entry.consequence}</td>
+                <td>${entry.likelihood}</td>
+                <td>${entry.severity}</td>
+                <td><strong>${entry.riskScore}</strong></td>
+                <td><span class="badge ${entry.riskClass}">${entry.riskLevel}</span></td>
+                <td>${entry.control}</td>
+                <td class="action-btns no-print">
+                    <button class="btn-warning" onclick="editEntry(${entry.id})">✏️</button>
+                    <button class="btn-danger" onclick="deleteEntry(${entry.id})">🗑️</button>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+    updateDashboard(allData);
+}
+
+function updateDashboard(data) {
+    const grid = document.getElementById('dashboard-grid');
+    if(!grid) return;
+    grid.innerHTML = ''; 
+
+    let countHijau = 0, countKuning = 0, countMerah = 0;
+
+    senaraiLokasi.forEach(lokasi => {
+        let rekodLokasi = data.filter(d => d.lokasi === lokasi);
+        let skorTertinggi = rekodLokasi.length > 0 ? Math.max(...rekodLokasi.map(d => d.riskScore)) : 0;
+        let status, kodWarna, teksWarna;
+
+        if (skorTertinggi <= 4) { status = "status-hijau"; kodWarna = "bg-hijau"; teksWarna = skorTertinggi === 0 ? "Tiada Isu" : "Selamat"; countHijau++; } 
+        else if (skorTertinggi <= 9) { status = "status-kuning"; kodWarna = "bg-kuning"; teksWarna = "Perhatian"; countKuning++; } 
+        else { status = "status-merah"; kodWarna = "bg-merah"; teksWarna = "Bahaya!"; countMerah++; }
+
+        const card = document.createElement('div');
+        card.className = `location-card ${status}`;
+        card.innerHTML = `<h3>${lokasi}</h3><div class="badge ${kodWarna}">${teksWarna}</div><div class="score-info">Skor Max: <strong>${skorTertinggi}</strong><br><small>(${rekodLokasi.length} rekod)</small></div>`;
+        grid.appendChild(card);
+    });
+
+    document.getElementById('count-hijau').innerText = countHijau;
+    document.getElementById('count-kuning').innerText = countKuning;
+    document.getElementById('count-merah').innerText = countMerah;
+    updateChart({ hijau: countHijau, kuning: countKuning, merah: countMerah });
+}
+
+function updateChart(counts) {
+    const ctx = document.getElementById('riskChart');
+    if(!ctx) return;
+    if (riskChartInstance) riskChartInstance.destroy(); 
+    riskChartInstance = new Chart(ctx.getContext('2d'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Selamat', 'Perhatian', 'Bahaya'],
+            datasets: [{ data: [counts.hijau, counts.kuning, counts.merah], backgroundColor: ['#27ae60', '#f1c40f', '#e74c3c'] }]
+        },
+        options: { responsive: true, plugins: { legend: { position: 'bottom' } }, maintainAspectRatio: false }
+    });
+}
+
+function editEntry(id) {
+    let data = JSON.parse(localStorage.getItem('hiracData')) || [];
+    let entry = data.find(d => d.id === id);
+    if(!entry) return;
+
+    ['editId', 'lokasi', 'task', 'hazard', 'consequence', 'likelihood', 'severity', 'control'].forEach(key => {
+        document.getElementById(key).value = entry[key];
+    });
+    document.getElementById('submitBtn').innerText = "💾 Simpan Perubahan";
+    document.getElementById('cancelEditBtn').classList.remove('hidden');
+    window.scrollTo(0, 0); 
+}
+
+function cancelEdit() {
+    document.getElementById('hiracForm').reset();
+    document.getElementById('editId').value = "";
+    document.getElementById('submitBtn').innerText = "➕ Tambah Rekod HIRAC";
+    document.getElementById('cancelEditBtn').classList.add('hidden');
+}
+
+function deleteEntry(id) {
+    let data = JSON.parse(localStorage.getItem('hiracData')) || [];
+    localStorage.setItem('hiracData', JSON.stringify(data.filter(e => e.id !== id)));
+    showFeedback("🗑️ Rekod dipadam dari Dashboard", "info");
+    loadFromStorage();
+}
+
+function askClearData() {
+    document.getElementById('confirmClearBox').classList.remove('hidden');
+    document.getElementById('confirmClearBox').scrollIntoView({ behavior: 'smooth' });
+}
+
+function executeClearData() {
+    localStorage.removeItem('hiracData');
+    document.getElementById('confirmClearBox').classList.add('hidden');
+    showFeedback("🗑️ Semua data dashboard dikosongkan", "info");
+    loadFromStorage();
+}
+
+function cancelClearData() {
+    document.getElementById('confirmClearBox').classList.add('hidden');
+}
+
+function downloadCSV() {
+    let data = JSON.parse(localStorage.getItem('hiracData')) || [];
+    if(data.length === 0) return showFeedback('❌ Tiada data untuk dimuat turun', 'error');
+    
+    let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; 
+    csvContent += "ID,Lokasi,Kerja,Bahaya,Kejadian,L,S,Skor,Tahap,Kawalan,Tarikh\n";
+    
+    data.forEach(row => {
+        let rowData = [
+            row.id, `"${row.lokasi}"`, `"${row.task}"`, `"${row.hazard}"`, 
+            `"${row.consequence}"`, row.likelihood, row.severity, 
+            row.riskScore, row.riskLevel, `"${row.control}"`, `"${row.timestamp}"`
+        ];
+        csvContent += rowData.join(",") + "\n";
+    });
+    
+    const link = document.createElement("a");
+    link.href = encodeURI(csvContent);
+    link.download = "Laporan_HIRAC_Lengkap.csv";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showFeedback('✅ CSV Berjaya dimuat turun', 'success');
+}
+
+function downloadPDF() {
+    const originalScrollPos = window.scrollY;
+    window.scrollTo(0, 0); 
+    
+    const element = document.getElementById('reportArea');
+    const tableWrapper = document.getElementById('pdfTableWrapper');
+    
+    document.querySelectorAll('.no-print').forEach(el => el.style.display = 'none');
+    
+    if (tableWrapper) {
+        tableWrapper.style.overflow = 'visible';
+        tableWrapper.style.width = '100%';
+    }
+    
+    showFeedback('⏳ Menyediakan PDF...', 'info');
+
+    const opt = {
+        margin:       [10, 10, 10, 10], 
+        filename:     'Laporan_Dashboard_HIRAC.pdf',
+        image:        { type: 'jpeg', quality: 0.98 },
+        pagebreak:    { mode: ['css', 'legacy'] }, 
+        html2canvas:  { scale: 2, useCORS: true, scrollY: 0, scrollX: 0, windowWidth: document.documentElement.offsetWidth }, 
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' } 
+    };
+
+    html2pdf().set(opt).from(element).save().then(() => {
+        document.querySelectorAll('.no-print').forEach(el => el.style.display = '');
+        if (tableWrapper) { tableWrapper.style.overflow = 'auto'; tableWrapper.style.width = ''; }
+        window.scrollTo(0, originalScrollPos);
+        showFeedback('✅ Laporan PDF berjaya dimuat turun', 'success');
+    }).catch(err => {
+        console.error(err);
+        document.querySelectorAll('.no-print').forEach(el => el.style.display = '');
+        showFeedback('❌ Ralat semasa menjana PDF', 'error');
+    });
+}
+
+function showFeedback(message, type) {
+    const feedbackBox = document.getElementById('feedbackBox');
+    feedbackBox.innerText = message;
+    feedbackBox.className = `feedback show ${type}`;
+    const timeout = type === 'error' ? 6000 : 3000;
+    setTimeout(() => {
+        feedbackBox.classList.remove('show');
+    }, timeout);
+}
+</script>
+</body>
+</html>
